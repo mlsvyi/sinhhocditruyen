@@ -1854,6 +1854,44 @@ function showResult() {
         btnReviewWrapper.style.display = 'none';
     }
 }
+    // --- TÍNH NĂNG ĐIỀU KHIỂN BẰNG BÀN PHÍM ---
+document.addEventListener('keydown', function(event) {
+    // Chỉ kích hoạt phím tắt khi màn hình câu hỏi đang hiển thị
+    if (screenQuestion.style.display === 'block') {
+        
+        // 1. Nhấn 1, 2, 3, 4 để chọn đáp án
+        if (['1', '2', '3', '4'].includes(event.key)) {
+            const index = parseInt(event.key) - 1;
+            const options = domOptionsContainer.children;
+            
+            // Đảm bảo đáp án tồn tại và chưa bị khoá (chưa trả lời xong)
+            if (options[index] && !options[index].classList.contains('disabled')) {
+                options[index].click(); // Mô phỏng thao tác click chuột
+            }
+        }
+        
+        // 2. Nhấn phím Mũi tên phải (->) để sang câu tiếp theo
+        if (event.key === 'ArrowRight') {
+            if (btnNext.style.display !== 'none') {
+                btnNext.click();
+            }
+        }
+
+        // 3. Nhấn phím Enter để "Xác nhận đáp án" (câu nhiều lựa chọn) hoặc chuyển câu
+        if (event.key === 'Enter') {
+            if (btnSubmit.style.display !== 'none') {
+                btnSubmit.click();
+            } else if (btnNext.style.display !== 'none') {
+                btnNext.click();
+            }
+        }
+    }
+    
+    // Phím Enter ở màn hình bắt đầu để vào làm bài luôn
+    if (screenStart.style.display !== 'none' && event.key === 'Enter') {
+        startQuiz();
+    }
+});
 </script>
 </body>
 </html>
