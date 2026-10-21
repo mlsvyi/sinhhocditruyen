@@ -244,7 +244,24 @@
     <!-- Màn hình cài đặt bắt đầu -->
     <div id="start-screen">
         <h1>Ôn tập Sinh học Tế bào</h1>
-        <div class="settings">
+       <div class="settings" style="max-width: 380px;">
+            <label class="setting-item" style="width: 100%; margin-bottom: 10px;">
+                <span style="font-weight: 600; min-width: 130px;">Chọn bài:</span>
+                <select id="part-selector" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #D1D5DB; font-size: 1em; cursor: pointer; background: white;">
+                    <option value="0">Tất cả 110 câu</option>
+                    <option value="1">Phần 1 (Câu 1 - 10)</option>
+                    <option value="2">Phần 2 (Câu 11 - 20)</option>
+                    <option value="3">Phần 3 (Câu 21 - 30)</option>
+                    <option value="4">Phần 4 (Câu 31 - 40)</option>
+                    <option value="5">Phần 5 (Câu 41 - 50)</option>
+                    <option value="6">Phần 6 (Câu 51 - 60)</option>
+                    <option value="7">Phần 7 (Câu 61 - 70)</option>
+                    <option value="8">Phần 8 (Câu 71 - 80)</option>
+                    <option value="9">Phần 9 (Câu 81 - 90)</option>
+                    <option value="10">Phần 10 (Câu 91 - 100)</option>
+                    <option value="11">Phần 11 (Câu 101 - 110)</option>
+                </select>
+            </label>
             <label class="setting-item">
                 <input type="checkbox" id="shuffle-questions" checked>
                 Xáo trộn thứ tự câu hỏi
