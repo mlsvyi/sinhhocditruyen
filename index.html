@@ -1675,10 +1675,22 @@ function goToStartScreen() {
 function startQuiz() {
     const shouldShuffleQuestions = document.getElementById('shuffle-questions').checked;
     const shouldShuffleOptions = document.getElementById('shuffle-options').checked;
+    const partSelected = parseInt(document.getElementById('part-selector').value);
     
-    // Sao chép sâu dữ liệu gốc để không thay đổi file gốc
-    currentPool = JSON.parse(JSON.stringify(originalQuestions));
+    // 1. Cắt lấy số lượng câu hỏi tương ứng với phần đã chọn
+    let baseQuestions = [];
+    if (partSelected === 0) {
+        baseQuestions = originalQuestions; // Học tất cả
+    } else {
+        const startIndex = (partSelected - 1) * 10;
+        const endIndex = startIndex + 10;
+        baseQuestions = originalQuestions.slice(startIndex, endIndex); // Cắt 10 câu
+    }
+
+    // Sao chép sâu dữ liệu gốc để không làm hỏng file gốc
+    currentPool = JSON.parse(JSON.stringify(baseQuestions));
     
+    // 2. Xáo trộn đáp án (nếu bật)
     if (shouldShuffleOptions) {
         currentPool = currentPool.map(q => {
             let correctAnswers = Array.isArray(q.correctIndex) 
@@ -1692,6 +1704,19 @@ function startQuiz() {
             } else {
                 q.correctIndex = q.options.indexOf(correctAnswers[0]);
             }
+            return q;
+        });
+    }
+
+    // 3. Xáo trộn câu hỏi (nếu bật)
+    if (shouldShuffleQuestions) {
+        currentPool = shuffleArray(currentPool);
+    }
+    
+    isReviewMode = false;
+    wrongQuestions = [];
+    runQuizSession();
+}
             return q;
         });
     }
