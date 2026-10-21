@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn tập Sinh học Tế bào & Di truyền</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --success: #10B981;
+            --error: #EF4444;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+            --text-light: #6B7280;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .quiz-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 15px;
+        }
+
+        .progress {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .score-board {
+            font-size: 0.9em;
+            color: var(--text-light);
+        }
+
+        .question {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background-color: var(--bg);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .option:hover:not(.disabled) {
+            background-color: #E0E7FF;
+            border-color: #A5B4FC;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .option.correct {
+            background-color: #D1FAE5;
+            border-color: var(--success);
+            color: #065F46;
+        }
+
+        .option.wrong {
+            background-color: #FEE2E2;
+            border-color: var(--error);
+            color: #991B1B;
+        }
+
+        .explanation {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #FFFBEB;
+            border-left: 4px solid #F59E0B;
+            display: none;
+            line-height: 1.6;
+        }
+
+        .explanation h4 {
+            margin: 0 0 10px 0;
+            color: #B45309;
+        }
+
+        .btn-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            display: none;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button#btn-review {
+            background-color: var(--error);
+        }
+        
+        button#btn-review:hover {
+            background-color: #B91C1C;
+        }
+
+        .result-screen {
+            text-align: center;
+            display: none;
+        }
+
+        .result-screen h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .citation {
+            font-size: 0.8em;
+            color: var(--text-light);
+            vertical-align: super;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container" id="quiz-app">
+    <!-- Màn hình câu hỏi -->
+    <div id="question-screen">
+        <div class="header">
+            <div class="progress" id="progress-text">Câu 1/10</div>
+            <div class="score-board">Điểm: <span id="score-text">0</span></div>
+        </div>
+        
+        <div class="question" id="question-text">Đang tải câu hỏi...</div>
+        
+        <div class="options" id="options-container">
+            <!-- Options will be injected here via JS -->
+        </div>
+
+        <div class="explanation" id="explanation-box">
+            <h4>Giải thích & Đáp án:</h4>
+            <p id="explanation-text"></p>
+        </div>
+
+        <div class="btn-container">
+            <button id="btn-next" onclick="nextQuestion()">Câu tiếp theo ❯</button>
+        </div>
+    </div>
+
+    <!-- Màn hình kết thúc -->
+    <div class="result-screen" id="result-screen">
+        <h2>Hoàn thành!</h2>
+        <p>Số câu đúng: <strong id="final-score">0</strong> / <span id="total-questions">0</span></p>
+        <p>Số câu sai: <strong id="final-wrong">0</strong></p>
+        
+        <div class="btn-container" style="justify-content: center; margin-top: 30px;">
+            <button id="btn-restart" onclick="restartQuiz()" style="display: block;">Làm lại từ đầu</button>
+            <button id="btn-review" onclick="startReview()" style="display: block;">Ôn lại các câu sai</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu câu hỏi (Trích xuất 10 câu đầu để làm mẫu nền tảng. Bạn có thể mở rộng mảng này bằng format tương tự cho 110 câu)
+    const allQuestions = [
+        {
+            id: 1,
+            text: "Điểm giống nhau giữa tái bản ADN ở Prokaryota và Eukaryota:[cite: 2]",
+            options: [
+                "A. Điểm khởi đầu của các sợi[cite: 2]",
+                "B. Chiều hướng tổng hợp và những đoạn ARN mồi[cite: 2]",
+                "C. Sự có mặt của các protein chuyên biệt nhằm hoạt hóa sự hoạt động của một số enzym[cite: 2]",
+                "D. Thành phần ezym tham gia[cite: 2]"
+            ],
+            correctIndex: 1, // Đáp án B[cite: 1]
+            explanation: "Đáp án đúng là B[cite: 1]. Cả tế bào nhân sơ và nhân thực đều tổng hợp ADN theo chiều 5' -> 3' và cần đoạn ARN mồi (primer) do enzym primase tổng hợp để khởi đầu. Các yếu tố khác như điểm khởi đầu (Prokaryota có 1, Eukaryota có nhiều) và hệ enzym đều khác biệt."
+        },
+        {
+            id: 2,
+            text: "Trong cơ chế kích thích:[cite: 2]",
+            options: [
+                "A. Gen điều chỉnh luôn luôn sản xuất ra protein hoạt hóa[cite: 2]",
+                "B. Tất cả đều đúng[cite: 2]",
+                "C. Gen cấu trúc luôn luôn được mở để tổng hợp mARN[cite: 2]",
+                "D. Quá trình dịch mà, phiên mã luôn luôn được diễn ra[cite: 2]"
+            ],
+            correctIndex: 0, // Đáp án A[cite: 1]
+            explanation: "Đáp án đúng là A[cite: 1]. Trong các cơ chế điều hòa, gen điều chỉnh (gen R) luôn hoạt động sản xuất ra các protein điều hòa (protein ức chế hoặc hoạt hóa) để kiểm soát sự đóng/mở của operon."
+        },
+        {
+            id: 3,
+            text: "Về các sự kiện trong kỳ đầu I của phân bào giảm nhiễm:[cite: 2]",
+            options: [
+                "A. Các chromatid chỉ dính với nhau tại eo sơ cấp trong suốt giai đoạn của kỳ này[cite: 2]",
+                "B. Tại lưỡng trị, các chromatid chị em bắt chéo nhau để trao đổi đoạn[cite: 2]",
+                "C. Gồm 4 giai đoạn[cite: 2]",
+                "D. Giai đoạn tiếp hợp là khởi đầu cho sự trao đổi chéo[cite: 2]"
+            ],
+            correctIndex: 3, // Đáp án D[cite: 1]
+            explanation: "Đáp án đúng là D[cite: 1]. Kỳ đầu I của giảm phân gồm 5 giai đoạn. Hiện tượng tiếp hợp (Synapsis) của các NST tương đồng là tiền đề bắt buộc để có thể xảy ra hiện tượng bắt chéo và trao đổi đoạn phía sau."
+        },
+        {
+            id: 4,
+            text: "Hiện tượng co nguyên sinh:[cite: 2]",
+            options: [
+                "A. Xảy ra khi môi trường nhược trương[cite: 2]",
+                "B. Thực chất là hiện tượng tan bào[cite: 2]",
+                "C. Xảy ra khi để hiện tượng phản co nguyên sinh một thời gian chừng 25-30 phút[cite: 2]",
+                "D. Xảy ra chỉ với thực vật, không xảy ra với động vật[cite: 2]"
+            ],
+            correctIndex: 3, // Đáp án D[cite: 1]
+            explanation: "Đáp án đúng là D[cite: 1]. Hiện tượng co nguyên sinh là hiện tượng màng tế bào tách khỏi thành tế bào do mất nước khi ở môi trường ưu trương. Hiện tượng này chỉ quan sát được ở tế bào có thành (như thực vật), động vật không có thành tế bào nên sẽ teo lại chứ không xảy ra co nguyên sinh."
+        },
+        {
+            id: 5,
+            text: "Về các tARN:[cite: 2]",
+            options: [
+                "A. Không có cấu tạo bậc 3[cite: 2]",
+                "B. Chiếm 50% tổng lượng ARN trong tế bào[cite: 2]",
+                "C. Cấu tạo bậc hai có vị trí gắn acid amin và vị trí nhận biết mã (đối mã)[cite: 2]",
+                "D. Là ARN duy nhất được tổng hợp từ tADN một cách đặc hiệu[cite: 2]"
+            ],
+            correctIndex: 2, // Đáp án C[cite: 1]
+            explanation: "Đáp án đúng là C[cite: 1]. tARN (ARN vận chuyển) mang cấu trúc bậc 2 hình lá chẽ ba, bao gồm vị trí đầu 3' gắn với acid amin đặc hiệu và vòng anticodon chứa bộ ba đối mã để khớp với mARN trong quá trình dịch mã."
+        },
+        {
+            id: 6,
+            text: "Bào quan duy nhất không có cấu tạo màng sinh chất:[cite: 2]",
+            options: [
+                "A. Ti thể[cite: 2]",
+                "B. Ribosom[cite: 2]",
+                "C. Tiêu thể[cite: 2]",
+                "D. Bộ Golgi[cite: 2]"
+            ],
+            correctIndex: 1, // Đáp án B[cite: 1]
+            explanation: "Đáp án đúng là B[cite: 1]. Ribosom là bào quan không được bao bọc bởi màng phospholipid kép, cấu tạo chủ yếu từ rARN và protein."
+        },
+        {
+            id: 7,
+            text: "Về mô hình Operon:[cite: 2]",
+            options: [
+                "A. Gen cấu trúc tạo ra các ribosom tham gia vào quá trình tổng hợp protein[cite: 2]",
+                "B. Vị trí vận hành là nơi vận hành quá trình tổng hợp protein...[cite: 2]",
+                "C. Vùng khởi đầu chứa vị trí vận hành và là nơi gắn vào của các ARN polymerase[cite: 2]",
+                "D. Gen điều chỉnh là nơi sản xuất ra các mARN rồi tổng hợp nên các enzym...[cite: 2]"
+            ],
+            correctIndex: 2, // Đáp án C[cite: 1]
+            explanation: "Đáp án đúng là C[cite: 1]. Vùng khởi đầu (Promoter) là điểm bám của enzym ARN polymerase để khởi động phiên mã, liền kề và có mối liên hệ mật thiết với vị trí vận hành (Operator) nhằm kiểm soát hoạt động Operon."
+        },
+        {
+            id: 8,
+            text: "Không xảy ra trong giai đoạn kéo dài chuỗi polipeptid:[cite: 2]",
+            options: [
+                "A. Vị trí A xuất hiện bộ ba UAA[cite: 2]",
+                "B. Các liên kết CO-NH được hình thành giữa các acid amin[cite: 2]",
+                "C. Gắn aminoacyl-tARN vào vị trí A trên ribosom[cite: 2]",
+                "D. Các yếu tố kéo dài gắn vào các aminoacyl-tARN[cite: 2]"
+            ],
+            correctIndex: 0, // Đáp án A[cite: 1]
+            explanation: "Đáp án đúng là A[cite: 1]. Bộ ba UAA là một trong ba bộ ba kết thúc (cùng với UAG, UGA). Khi UAA xuất hiện ở vị trí A, quá trình dịch mã sẽ chuyển sang giai đoạn kết thúc, không thể tiếp tục kéo dài."
+        },
+        {
+            id: 9,
+            text: "Tạo lớp áo tế bào thông qua quá trình glycolsyl hóa là chức năng của:[cite: 2]",
+            options: [
+                "A. Chresteron ở màng[cite: 2]",
+                "B. Photpholipid màng[cite: 2]",
+                "C. Protein màng[cite: 2]",
+                "D. Carbohydrat màng[cite: 2]"
+            ],
+            correctIndex: 3, // Đáp án D[cite: 1]
+            explanation: "Đáp án đúng là D[cite: 1]. Lớp áo tế bào (Glycocalyx) hình thành từ các chuỗi gốc đường (carbohydrat) liên kết cộng hóa trị với lipid (glycolipid) và protein (glycoprotein) ở mặt ngoài màng tế bào."
+        },
+        {
+            id: 10,
+            text: "Đặc điểm chung của đột biến:[cite: 2]",
+            options: [
+                "A. Do các tác nhân cả bên ngoài và bên trong cơ thể gây ra[cite: 2]",
+                "B. Không thể biểu hiện ngay ở kiểu hình mà phải chờ đến thế hệ sau[cite: 2]",
+                "C. Không thể di truyền[cite: 2]",
+                "D. Chỉ có thể xảy ra ở tế bào sinh dục[cite: 2]"
+            ],
+            correctIndex: 0, // Đáp án A[cite: 1]
+            explanation: "Đáp án đúng là A[cite: 1]. Đột biến có thể phát sinh do tác nhân vật lý, hóa học, sinh học từ môi trường ngoài, hoặc do các rối loạn sinh lý, sinh hóa ngay bên trong nội bộ tế bào. Đột biến có thể xảy ra ở cả tế bào xôma và tế bào sinh dục."
+        }
+    ];
+
+    let currentPool = [...allQuestions];
+    let currentIndex = 0;
+    let score = 0;
+    let wrongQuestions = [];
+    let isReviewMode = false;
+
+    const domQuestionText = document.getElementById('question-text');
+    const domOptionsContainer = document.getElementById('options-container');
+    const domProgressText = document.getElementById('progress-text');
+    const domScoreText = document.getElementById('score-text');
+    const domExplanationBox = document.getElementById('explanation-box');
+    const domExplanationText = document.getElementById('explanation-text');
+    const btnNext = document.getElementById('btn-next');
+    
+    const screenQuestion = document.getElementById('question-screen');
+    const screenResult = document.getElementById('result-screen');
+    
+    function initQuiz() {
+        currentIndex = 0;
+        score = 0;
+        wrongQuestions = [];
+        domScoreText.innerText = score;
+        screenQuestion.style.display = 'block';
+        screenResult.style.display = 'none';
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const q = currentPool[currentIndex];
+        
+        // Reset giao diện
+        domExplanationBox.style.display = 'none';
+        btnNext.style.display = 'none';
+        domOptionsContainer.innerHTML = '';
+        
+        // Render Text
+        const reviewLabel = isReviewMode ? "[Chế độ Ôn Tập] " : "";
+        domProgressText.innerText = `${reviewLabel}Câu ${currentIndex + 1}/${currentPool.length}`;
+        domQuestionText.innerHTML = q.text;
+
+        // Render Options
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'option';
+            btn.innerHTML = opt;
+            btn.onclick = () => selectOption(index, btn);
+            domOptionsContainer.appendChild(btn);
+        });
+    }
+
+    function selectOption(selectedIndex, selectedElement) {
+        const q = currentPool[currentIndex];
+        const allOptions = domOptionsContainer.children;
+        
+        // Disable all options
+        for(let i = 0; i < allOptions.length; i++) {
+            allOptions[i].classList.add('disabled');
+            allOptions[i].onclick = null; // Remove listener
+        }
+
+        const isCorrect = selectedIndex === q.correctIndex;
+
+        if(isCorrect) {
+            selectedElement.classList.add('correct');
+            if(!isReviewMode) score++;
+            domScoreText.innerText = score;
+        } else {
+            selectedElement.classList.add('wrong');
+            // Highlight correct answer
+            allOptions[q.correctIndex].classList.add('correct');
+            
+            // Lưu vào danh sách sai nếu chưa có
+            if (!isReviewMode && !wrongQuestions.find(wq => wq.id === q.id)) {
+                wrongQuestions.push(q);
+            }
+        }
+
+        // Hiện giải thích
+        domExplanationText.innerHTML = q.explanation;
+        domExplanationBox.style.display = 'block';
+        
+        // Hiện nút next
+        btnNext.style.display = 'block';
+        if(currentIndex === currentPool.length - 1) {
+            btnNext.innerText = 'Xem kết quả ❯';
+        } else {
+            btnNext.innerText = 'Câu tiếp theo ❯';
+        }
+    }
+
+    function nextQuestion() {
+        if(currentIndex < currentPool.length - 1) {
+            currentIndex++;
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        screenQuestion.style.display = 'none';
+        screenResult.style.display = 'block';
+        
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('total-questions').innerText = currentPool.length;
+        document.getElementById('final-wrong').innerText = isReviewMode ? "0 (Hoàn thành ôn tập)" : wrongQuestions.length;
+
+        const btnReview = document.getElementById('btn-review');
+        if(!isReviewMode && wrongQuestions.length > 0) {
+            btnReview.style.display = 'block';
+        } else {
+            btnReview.style.display = 'none';
+        }
+    }
+
+    function restartQuiz() {
+        isReviewMode = false;
+        currentPool = [...allQuestions];
+        initQuiz();
+    }
+
+    function startReview() {
+        if(wrongQuestions.length === 0) return;
+        isReviewMode = true;
+        currentPool = [...wrongQuestions];
+        initQuiz();
+    }
+
+    // Khởi chạy
+    initQuiz();
+
+</script>
+</body>
+</html>
